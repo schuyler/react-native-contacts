@@ -93,6 +93,7 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
     [keysToFetch addObjectsFromArray:@[
                                        CNContactEmailAddressesKey,
                                        CNContactPhoneNumbersKey,
+                                       CNContactUrlAddressesKey,
                                        CNContactFamilyNameKey,
                                        CNContactGivenNameKey,
                                        CNContactMiddleNameKey,
@@ -185,7 +186,25 @@ RCT_EXPORT_METHOD(getAllWithoutPhotos:(RCTResponseSenderBlock) callback)
     
     [output setObject: emailAddreses forKey:@"emailAddresses"];
     //end emails
-    
+
+    //handle urlAddresses
+    NSMutableArray *urlAddresses = [[NSMutableArray alloc] init];
+
+    for (CNLabeledValue<NSString*>* labeledValue in person.urlAddresses) {
+        NSMutableDictionary* urlAddress = [NSMutableDictionary dictionary];
+        NSString* label = [CNLabeledValue localizedStringForLabel:[labeledValue label]];
+        NSString* value = [labeledValue value];
+
+        if(label && value) {
+            [urlAddress setObject: value forKey:@"urlAddress"];
+            [urlAddress setObject: label forKey:@"label"];
+            [urlAddresses addObject:urlAddress];
+        }
+    }
+
+    [output setObject: urlAddresses forKey:@"urlAddresses"];
+    //end urlAddresses
+
     //handle postal addresses
     NSMutableArray *postalAddresses = [[NSMutableArray alloc] init];
     
@@ -344,6 +363,7 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
     NSArray * keysToFetch =@[
                              CNContactEmailAddressesKey,
                              CNContactPhoneNumbersKey,
+                             CNContactUrlAddressesKey,
                              CNContactFamilyNameKey,
                              CNContactGivenNameKey,
                              CNContactMiddleNameKey,
@@ -422,7 +442,20 @@ RCT_EXPORT_METHOD(updateContact:(NSDictionary *)contactData callback:(RCTRespons
     }
     
     contact.emailAddresses = emails;
-    
+
+    NSMutableArray *urlAddresses = [[NSMutableArray alloc]init];
+
+    for (id urlAddressData in [contactData valueForKey:@"urlAddresses"]) {
+        NSString *label = [urlAddressData valueForKey:@"label"];
+        NSString *urlAddress = [urlAddressData valueForKey:@"urlAddress"];
+
+        if(label && urlAddress) {
+            [urlAddresses addObject:[[CNLabeledValue alloc] initWithLabel:label value:urlAddress]];
+        }
+    }
+
+    contact.urlAddresses = urlAddresses;
+
     //todo - update postal addresses
     
     NSString *thumbnailPath = [contactData valueForKey:@"thumbnailPath"];
